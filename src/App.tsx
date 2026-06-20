@@ -48,6 +48,8 @@ import { BackgroundPaths } from "@/src/components/ui/background-paths";
 import { Button } from "@/src/components/ui/button";
 import { DrawingCanvas } from "@/src/components/DrawingCanvas";
 import { AudioRecorder } from "@/src/components/AudioRecorder";
+import PricingSection6 from "@/src/components/ui/pricing-section-4";
+import ShaderBackground from "@/src/components/ui/shader-background";
 import { AIModel, ChatSession, Message, FileAttachment } from "@/src/types";
 
 // App navigation stages
@@ -73,35 +75,180 @@ export function toMathBoldSans(text: string): string {
   }).join('');
 }
 
+export const isImageUrl = (url: string) => {
+  if (!url) return false;
+  const cleanUrl = url.split("?")[0].toLowerCase().trim();
+  return (
+    url.includes("images.unsplash.com") ||
+    cleanUrl.endsWith(".jpg") ||
+    cleanUrl.endsWith(".jpeg") ||
+    cleanUrl.endsWith(".png") ||
+    cleanUrl.endsWith(".webp") ||
+    cleanUrl.endsWith(".gif") ||
+    url.includes("source.unsplash.com") ||
+    url.includes("unsplash.com/photo-")
+  );
+};
+
 export const parseInlineBoldAndItalics = (line: string) => {
   if (!line) return "";
-  // Regular expression to find **text**
-  const boldParts = line.split(/(\*\*.*?\*\*)/g);
-  
-  return boldParts.map((bPart, bIdx) => {
-    if (bPart.startsWith("**") && bPart.endsWith("**")) {
-      const rawText = bPart.slice(2, -2);
-      const boldUnicode = toMathBoldSans(rawText);
-      return (
-        <strong key={bIdx} className="font-extrabold text-[#1C1C18] dark:text-white bg-[#6B705C]/10 px-1 py-0.5 rounded tracking-wide">
-          {boldUnicode}
-        </strong>
-      );
-    }
-    
-    // Check for single * as italic
-    const italicParts = bPart.split(/(\*.*?\*)/g);
-    return italicParts.map((iPart, iIdx) => {
-      if (iPart.startsWith("*") && iPart.endsWith("*")) {
-        const rawText = iPart.slice(1, -1);
+
+  // 1. Split by images first: `![alt](url)`
+  const imageRegex = /(!\[.*?\]\(.*?\))/g;
+  const imageParts = line.split(imageRegex);
+
+  return imageParts.map((imagePart, idx) => {
+    if (imagePart.startsWith("![") && imagePart.includes("](") && imagePart.endsWith(")")) {
+      const altMatch = imagePart.match(/!\[(.*?)\]/);
+      const urlMatch = imagePart.match(/\((.*?)\)/);
+      const alt = altMatch ? altMatch[1] : "Generated Image";
+      const url = urlMatch ? urlMatch[1] : "";
+      if (url) {
         return (
-          <em key={iIdx} className="italic font-serif font-semibold text-[#6B705C] px-0.5">
-            {rawText}
-          </em>
+          <div key={`img-${idx}`} className="my-4 max-w-full rounded-2xl overflow-hidden border border-natural-border shadow-md bg-stone-100 dark:bg-black/40 flex flex-col">
+            <img
+              src={url}
+              alt={alt}
+              referrerPolicy="no-referrer"
+              className="w-full h-auto object-cover max-h-[420px] hover:scale-[1.01] transition-transform duration-300"
+              onError={(e) => {
+                e.currentTarget.src = `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=700&q=80`;
+              }}
+            />
+            <span className="text-[11px] text-natural-muted font-mono p-2.5 border-t border-natural-border/30 text-center bg-natural-aside/10 dark:bg-zinc-900/45 flex items-center justify-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+              Image: {alt}
+            </span>
+          </div>
         );
       }
-      return iPart;
-    });
+    }
+
+    // 2. Split by links: `[text](url)` but not images
+    const linkRegex = /(\[.*?\]\(.*?\))/g;
+    const linkParts = imagePart.split(linkRegex);
+
+    return (
+      <React.Fragment key={`part-${idx}`}>
+        {linkParts.map((linkPart, lIdx) => {
+          if (linkPart.startsWith("[") && linkPart.includes("](") && linkPart.endsWith(")")) {
+            const textMatch = linkPart.match(/\[(.*?)\]/);
+            const urlMatch = linkPart.match(/\((.*?)\)/);
+            const text = textMatch ? textMatch[1] : "Link";
+            const url = urlMatch ? urlMatch[1] : "";
+            if (url) {
+              if (isImageUrl(url)) {
+                return (
+                  <div key={`link-img-${lIdx}`} className="my-4 max-w-full rounded-2xl overflow-hidden border border-natural-border shadow-md bg-stone-100 dark:bg-black/40 flex flex-col">
+                    <img
+                      src={url}
+                      alt={text}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-auto object-cover max-h-[420px] hover:scale-[1.01] transition-transform duration-300"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=700&q=80`;
+                      }}
+                    />
+                    <span className="text-[11px] text-natural-muted font-mono p-2.5 border-t border-natural-border/30 text-center bg-natural-aside/10 dark:bg-zinc-900/45 flex items-center justify-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                      Image Result: {text}
+                    </span>
+                  </div>
+                );
+              }
+              return (
+                <a
+                  key={`link-${lIdx}`}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 dark:text-blue-400 font-bold underline hover:text-blue-600 dark:hover:text-blue-300 inline-flex items-center gap-0.5 mx-0.5"
+                >
+                  {text}
+                </a>
+              );
+            }
+          }
+
+          // Check if some word in here is raw image or unsplash url
+          const urlWords = linkPart.split(/(\s+)/);
+          const elements = urlWords.map((word, wIdx) => {
+            const trimmedWord = word.trim();
+            if (trimmedWord.startsWith("http://") || trimmedWord.startsWith("https://")) {
+              if (isImageUrl(trimmedWord)) {
+                return (
+                  <div key={`raw-img-${wIdx}`} className="my-4 max-w-full rounded-2xl overflow-hidden border border-natural-border shadow-md bg-stone-100 dark:bg-black/40 flex flex-col">
+                    <img
+                      src={trimmedWord}
+                      alt="Rendered Asset"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-auto object-cover max-h-[420px] hover:scale-[1.01] transition-transform duration-300"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=700&q=80`;
+                      }}
+                    />
+                    <span className="text-[11px] text-natural-muted font-mono p-2.5 border-t border-natural-border/30 text-center bg-natural-aside/10 dark:bg-zinc-900/45 flex items-center justify-center gap-1.5 animate-pulse">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                      Visual Asset
+                    </span>
+                  </div>
+                );
+              }
+              return (
+                <a
+                  key={`raw-link-${wIdx}`}
+                  href={trimmedWord}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 dark:text-blue-400 font-bold underline hover:text-blue-600 dark:hover:text-blue-300 inline-flex items-center gap-0.5 mx-0.5 break-all"
+                >
+                  {trimmedWord}
+                </a>
+              );
+            }
+
+            const boldParts = word.split(/(\*\*.*?\*\*)/g);
+
+            return (
+              <React.Fragment key={`bold-italic-${wIdx}`}>
+                {boldParts.map((bPart, bIdx) => {
+                  if (bPart.startsWith("**") && bPart.endsWith("**")) {
+                    const rawText = bPart.slice(2, -2);
+                    const boldUnicode = toMathBoldSans(rawText);
+                    return (
+                      <strong key={`b-${bIdx}`} className="font-extrabold text-[#111827] dark:text-white bg-blue-500/10 dark:bg-blue-400/15 px-1 py-0.5 rounded tracking-wide">
+                        {boldUnicode}
+                      </strong>
+                    );
+                  }
+
+                  const italicParts = bPart.split(/(\*.*?\*)/g);
+
+                  return (
+                    <React.Fragment key={`it-${bIdx}`}>
+                      {italicParts.map((iPart, iIdx) => {
+                        if (iPart.startsWith("*") && iPart.endsWith("*")) {
+                          const rawText = iPart.slice(1, -1);
+                          return (
+                            <em key={`i-${iIdx}`} className="italic font-serif font-semibold text-blue-600 dark:text-blue-400 px-0.5">
+                              {rawText}
+                            </em>
+                          );
+                        }
+
+                        return iPart;
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+              </React.Fragment>
+            );
+          });
+
+          return <React.Fragment key={`word-${lIdx}`}>{elements}</React.Fragment>;
+        })}
+      </React.Fragment>
+    );
   });
 };
 
@@ -236,6 +383,8 @@ export default function App() {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [playingAudioMsgId, setPlayingAudioMsgId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPricingOpen, setIsPricingOpen] = useState(false);
+  const [isShaderBgActive, setIsShaderBgActive] = useState(false);
 
   const handleTogglePinSession = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -347,6 +496,7 @@ export default function App() {
         model: "anthropic/claude-haiku-4-5",
         thinkingEnabled: true,
         createdAt: new Date().toISOString(),
+        creator: "Dapp.",
         messages: [
           {
             id: "msg-welcome-sh",
@@ -439,6 +589,7 @@ export default function App() {
       model: selectedModel,
       thinkingEnabled: thinkingEnabled,
       createdAt: new Date().toISOString(),
+      creator: "Dapp.",
       messages: []
     };
     
@@ -530,7 +681,7 @@ export default function App() {
   };
 
   // Voice Recording Attachment callback
-  const handleAttachVoiceNote = (objectUrl: string, blob: Blob, durationSeconds: number) => {
+  const handleAttachVoiceNote = (objectUrl: string, blob: Blob, durationSeconds: number, liveTranscript?: string) => {
     const dummyPeakCount = 20;
     const fakePeaks = Array.from({ length: dummyPeakCount }, () => Math.floor(Math.random() * 85) + 15);
     
@@ -549,7 +700,7 @@ export default function App() {
         objectUrl,
         durationSeconds,
         waveformPeaks: fakePeaks,
-        transcript: "Voice Note: [Processing and Transcribing...]"
+        transcript: liveTranscript || "Voice Note: [Processing and Transcribing...]"
       };
 
       // Create new user message for voice record addition
@@ -559,7 +710,7 @@ export default function App() {
       const userMessage: Message = {
         id: userMsgId,
         role: "user",
-        content: `Sent a Voice Note (${durationSeconds}s)`,
+        content: liveTranscript ? `Sent a Voice Note: "${liveTranscript}"` : `Sent a Voice Note (${durationSeconds}s)`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         attachments: [audioAttachment],
         voiceNote: customVoiceObj
@@ -569,10 +720,11 @@ export default function App() {
       if (!activeSessionId) {
         const newSessionState: ChatSession = {
           id: mockSessionId,
-          title: `Voice query ${sessions.length + 1}`,
+          title: liveTranscript ? (liveTranscript.length > 25 ? liveTranscript.slice(0, 25) + "..." : liveTranscript) : `Voice query ${sessions.length + 1}`,
           model: selectedModel,
           thinkingEnabled: thinkingEnabled,
           createdAt: new Date().toISOString(),
+          creator: "Dapp.",
           messages: [userMessage]
         };
         updatedSessions = [newSessionState, ...sessions];
@@ -593,7 +745,8 @@ export default function App() {
       setIsRecordingVoice(false);
 
       // Trigger intelligence callback using automated transcription
-      triggerAIService("Attached voice note query. Analyze and describe structural points.", userMsgId, mockSessionId, [audioAttachment]);
+      const voicePrompt = liveTranscript ? `Tolong tanggapi pesan suara/perintah suara saya ini: "${liveTranscript}"` : "Attached voice note query. Analyze and describe structural points.";
+      triggerAIService(voicePrompt, userMsgId, mockSessionId, [audioAttachment]);
     };
     reader.readAsDataURL(blob);
   };
@@ -663,6 +816,7 @@ export default function App() {
         model: selectedModel,
         thinkingEnabled: thinkingEnabled,
         createdAt: new Date().toISOString(),
+        creator: "Dapp.",
         messages: [userMessage]
       };
       setActiveSessionId(targetSessionId);
@@ -734,8 +888,9 @@ export default function App() {
     );
 
     try {
-      // Pick first picture if any, otherwise null
-      const mainPic = filesToSubmit?.find(f => f.type.startsWith("image"));
+      // Pick first picture or audio attachment to submit to the API
+      const mainPic = filesToSubmit?.find(f => f.type && f.type.startsWith("image"));
+      const mainAudio = filesToSubmit?.find(f => f.type && f.type.startsWith("audio"));
       
       const payload: any = {
         prompt: prompt,
@@ -745,6 +900,9 @@ export default function App() {
       if (mainPic) {
         payload.fileBase64 = mainPic.base64;
         payload.fileMime = mainPic.type;
+      } else if (mainAudio) {
+        payload.fileBase64 = mainAudio.base64;
+        payload.fileMime = mainAudio.type;
       }
 
       const response = await fetch("/api/chat", {
@@ -876,6 +1034,12 @@ export default function App() {
         <AuthUI onLoginSuccess={handleLoginSuccess} />
       ) : (
         <div className="flex w-full h-screen h-[100dvh] bg-natural-bg text-natural-text font-sans overflow-hidden relative">
+          
+          {isShaderBgActive && (
+            <div className="absolute inset-0 z-0 opacity-15 pointer-events-none">
+              <ShaderBackground />
+            </div>
+          )}
           
           {/* Mobile Header Banner */}
           <div className="md:hidden flex items-center justify-between w-full h-14 border-b border-natural-border bg-natural-aside px-4 fixed top-0 left-0 z-30">
@@ -1119,9 +1283,14 @@ export default function App() {
                                 : "text-natural-dark hover:bg-natural-border/30"
                             }`}
                           >
-                            <div className="flex items-center gap-1.5 overflow-hidden w-full mr-2">
-                              <MessageSquare className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                              <span className="text-xs truncate font-medium">{s.title}</span>
+                            <div className="flex flex-col overflow-hidden w-full mr-2">
+                              <div className="flex items-center gap-1.5">
+                                <MessageSquare className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                <span className="text-xs truncate font-medium">{s.title}</span>
+                              </div>
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono ml-5 mt-0.5">
+                                Pencipta: {s.creator || "Dapp."}
+                              </span>
                             </div>
 
                             <div className="flex items-center gap-0.5">
@@ -1172,10 +1341,15 @@ export default function App() {
                               : "text-natural-dark hover:bg-natural-border/30"
                           }`}
                         >
-                          <div className="flex items-center gap-2 overflow-hidden w-[75%] mr-1">
-                            <MessageSquare className="h-3.5 w-3.5 shrink-0 opacity-70 text-natural-accent" />
-                            <span className="text-xs truncate font-medium text-inherit">
-                              {s.title}
+                          <div className="flex flex-col overflow-hidden w-[75%] mr-1">
+                            <div className="flex items-center gap-2">
+                              <MessageSquare className="h-3.5 w-3.5 shrink-0 opacity-70 text-natural-accent" />
+                              <span className="text-xs truncate font-medium text-inherit">
+                                {s.title}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-natural-muted font-mono ml-5 mt-0.5">
+                              Pencipta: {s.creator || "Dapp."}
                             </span>
                           </div>
 
@@ -1243,6 +1417,16 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Premium Plan upgrade banner / trigger */}
+              <button
+                type="button"
+                onClick={() => setIsPricingOpen(true)}
+                className="w-full h-8 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 shadow-sm hover:opacity-90 cursor-pointer transition-all active:scale-[0.98]"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Lihat Pricing Plans (Langganan)</span>
+              </button>
+
               {/* Action operations buttons bar (Logout & Settings) */}
               <div className="grid grid-cols-2 gap-2">
                 {/* Settings Trigger Icon Button (as requested) */}
@@ -1297,6 +1481,11 @@ export default function App() {
                 <h1 className="font-serif italic font-bold text-sm tracking-tight text-natural-dark truncate max-w-sm">
                   {activeSession ? activeSession.title : "Unassigned Probe Segment"}
                 </h1>
+                {activeSession && (
+                  <span className="hidden md:inline-block text-[10px] bg-[#E5E5DC] dark:bg-[#2C2C28] text-natural-muted font-bold px-2 py-0.5 rounded-full border border-natural-border/30">
+                    Pencipta: <span className="text-[#3B82F6]">{activeSession.creator || "Dapp."}</span>
+                  </span>
+                )}
               </div>
             </div>
 
@@ -1617,8 +1806,8 @@ export default function App() {
                               <span className="text-[10px] font-mono text-[#8A8A7C]">{m.voiceNote.durationSeconds}s</span>
                             </div>
                             
-                            <div className="text-[11px] italic text-[#6B705C] font-serif border-l border-[#6B705C] pl-2">
-                              "Automatic Speech-to-Text transcript synchronized."
+                            <div className="text-[11px] text-[#6B705C] dark:text-[#D6D6CC] font-medium border-l border-[#6B705C] pl-2 whitespace-pre-wrap">
+                              "{m.voiceNote.transcript || "Automatic Speech-to-Text transcript synchronized."}"
                             </div>
                           </div>
                         )}
@@ -1957,6 +2146,7 @@ export default function App() {
                     <div className="text-xs text-[#2C2C28] space-y-1">
                       <p><b>Email:</b> {userEmail || "ewatyua@gmail.com"}</p>
                       <p><b>Role:</b> Administrator (Root Client)</p>
+                      <p><b>Database Creator (Pencipta):</b> <span className="text-emerald-500 font-bold font-mono">Dapp.</span></p>
                       <p><b>Status:</b> Premium Sandbox Enabled</p>
                     </div>
                   </div>
@@ -1965,14 +2155,28 @@ export default function App() {
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-natural-dark block">System Options</label>
                     <div className="space-y-2 text-xs text-natural-muted">
-                      <div className="flex items-center justify-between p-2 rounded-lg hover:bg-black/5">
+                      <div className="flex items-center justify-between p-2 rounded-lg hover:bg-black/5 font-mono text-[11px]">
                         <span>Mode Pensil / Board Sketcher</span>
                         <span className="text-emerald-500 font-bold">READY</span>
                       </div>
-                      <div className="flex items-center justify-between p-2 rounded-lg hover:bg-black/5">
+                      <div className="flex items-center justify-between p-2 rounded-lg hover:bg-black/5 font-mono text-[11px]">
                         <span>Sematkan History Mirroring</span>
                         <span className="text-emerald-500 font-bold">ACTIVE</span>
                       </div>
+                      
+                      {/* WebGL Wave shader toggle */}
+                      <button
+                        type="button"
+                        onClick={() => setIsShaderBgActive(!isShaderBgActive)}
+                        className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-black/5 text-left border-0 bg-transparent cursor-pointer font-mono text-[11px]"
+                      >
+                        <span className="text-natural-text">WebGL Wave-Flow Background</span>
+                        <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md ${
+                          isShaderBgActive ? "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400" : "bg-[#8A8A7C]/10 text-natural-muted"
+                        }`}>
+                          {isShaderBgActive ? "ACTIVE" : "DISABLED"}
+                        </span>
+                      </button>
                     </div>
                   </div>
 
@@ -2007,6 +2211,41 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Pricing modal (PricingSection6) */}
+        <AnimatePresence>
+          {isPricingOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-55 p-4 overflow-y-auto"
+            >
+              <motion.div
+                initial={{ scale: 0.95, y: 30 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 30 }}
+                className="w-full max-w-5xl bg-white dark:bg-[#0C0C0A] border border-natural-border rounded-3xl shadow-2xl flex flex-col overflow-hidden text-natural-text relative my-8"
+              >
+                {/* Floating close wrapper */}
+                <button
+                  type="button"
+                  onClick={() => setIsPricingOpen(false)}
+                  className="absolute top-4 right-4 z-55 p-2 rounded-full bg-black/10 dark:bg-white/10 text-natural-muted hover:text-natural-text hover:scale-105 border-0 cursor-pointer transition-all"
+                  title="Close Pricing Card"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
+                {/* Pricing section inclusion body */}
+                <div className="p-1 max-h-[85vh] overflow-y-auto overflow-x-hidden scrollbar-thin">
+                  <PricingSection6 />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         </div>
       )}
     </div>

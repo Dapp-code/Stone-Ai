@@ -3,7 +3,7 @@ import { Mic, Square, Trash2, ArrowRight, Video, Play, Pause, Loader } from "luc
 import { Button } from "@/src/components/ui/button";
 
 interface AudioRecorderProps {
-  onAttachAudio: (blobUrl: string, blob: Blob, duration: number) => void;
+  onAttachAudio: (blobUrl: string, blob: Blob, duration: number, transcript?: string) => void;
   onCancel: () => void;
 }
 
@@ -13,10 +13,12 @@ export function AudioRecorder({ onAttachAudio, onCancel }: AudioRecorderProps) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [pulseBars, setPulseBars] = useState<number[]>([]);
+  const [transcript, setTranscript] = useState("");
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<any | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   // Generate fancy animated waveform values when recording
   useEffect(() => {
@@ -54,6 +56,36 @@ export function AudioRecorder({ onAttachAudio, onCancel }: AudioRecorderProps) {
 
   const startRecording = async () => {
     try {
+      // Clear previous transcript
+      setTranscript("");
+      
+      const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognitionClass) {
+        try {
+          const rec = new SpeechRecognitionClass();
+          rec.continuous = true;
+          rec.interimResults = true;
+          rec.lang = "id-ID"; // Set to Indonesian Language
+          rec.onresult = (event: any) => {
+            let combined = "";
+            for (let i = 0; i < event.results.length; i++) {
+              combined += event.results[i][0].transcript + " ";
+            }
+            setTranscript(combined.trim());
+          };
+          rec.onerror = (e: any) => {
+            console.warn("SpeechRecognition error:", e.error);
+          };
+          rec.onend = () => {
+            console.log("SpeechRecognition stopped");
+          };
+          recognitionRef.current = rec;
+          rec.start();
+        } catch (e) {
+          console.error("SpeechRecognition init error:", e);
+        }
+      }
+
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert("Microphone recording is not supported in this browser context.");
         return;
@@ -102,6 +134,8 @@ export function AudioRecorder({ onAttachAudio, onCancel }: AudioRecorderProps) {
 
   const simulateRecording = () => {
     console.log("Stone AI: Simulating microphone capture in sandboxed environment.");
+    // Simulate speech-to-text text
+    setTranscript("Bagaimana cara merancang sistem database yang kokoh dan durabel?");
     setIsRecording(true);
     setDuration(0);
     setAudioUrl(null);
@@ -109,6 +143,12 @@ export function AudioRecorder({ onAttachAudio, onCancel }: AudioRecorderProps) {
   };
 
   const stopRecording = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+    }
+
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
     } else {
@@ -125,7 +165,7 @@ export function AudioRecorder({ onAttachAudio, onCancel }: AudioRecorderProps) {
 
   const handleAttach = () => {
     if (!audioUrl || !recordedBlob) return;
-    onAttachAudio(audioUrl, recordedBlob, duration || 5);
+    onAttachAudio(audioUrl, recordedBlob, duration || 5, transcript);
   };
 
   const formatTime = (seconds: number) => {
@@ -171,6 +211,28 @@ export function AudioRecorder({ onAttachAudio, onCancel }: AudioRecorderProps) {
           </div>
         )}
       </div>
+
+      {/* Transcript text area */}
+      {(isRecording || transcript || audioUrl) && (
+        <div className="p-3 bg-white border border-[#D6D6CC] rounded-xl flex flex-col gap-1.5 animate-fade-in transition-all">
+          <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#8A8A7C] uppercase tracking-wider">
+            <span>Terjemahan Suara (Live Transcript)</span>
+            {isRecording && (
+              <span className="flex items-center gap-1 text-emerald-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                Transcribing...
+              </span>
+            )}
+          </div>
+          <textarea
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+            placeholder={isRecording ? "Berbicaralah... Hasil transkripsi kata akan muncul otomatis di sini..." : "Hasil transkripsi suara kosong. Silakan tulis text alternatif jika rekaman tidak terdengar baik..."}
+            rows={2}
+            className="w-full text-xs font-medium bg-transparent border-0 outline-none resize-none text-[#2C2C28] placeholder-zinc-400"
+          />
+        </div>
+      )}
 
       {/* Interactive Controls */}
       <div className="flex items-center justify-between gap-3 pt-2">

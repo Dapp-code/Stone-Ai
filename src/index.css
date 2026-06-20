@@ -207,3 +207,15 @@ canvas, canvas * {
   color: #F9FAFB !important;
   border-color: #2D3748 !important;
 }
+
+/* Custom properties for Sparkles and Pricing section */
+:root {
+  --gradient-color: #8350e8;
+  --sparkles-color: #8350e8;
+}
+
+.theme-dark {
+  --gradient-color: #8350e8;
+  --sparkles-color: #ffffff;
+}
+

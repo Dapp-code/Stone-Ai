@@ -39,4 +39,5 @@ export interface ChatSession {
   messages: Message[];
   createdAt: string;
   isPinned?: boolean;
+  creator?: string;
 }
