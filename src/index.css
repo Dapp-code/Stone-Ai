@@ -1,0 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght=0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Custom enterprise design tokens mapped to active theme */
+  --color-brand-bg: var(--theme-bg);
+  --color-brand-sec-bg: var(--theme-sec-bg);
+  --color-brand-card: var(--theme-card);
+  --color-brand-card-hover: var(--theme-card-hover);
+  --color-brand-border: var(--theme-border);
+  --color-brand-text-primary: var(--theme-text-primary);
+  --color-brand-text-secondary: var(--theme-text-secondary);
+  --color-brand-text-muted: var(--theme-text-muted);
+  --color-brand-primary: var(--theme-primary);
+  --color-brand-primary-hover: var(--theme-primary-hover);
+  
+  --color-brand-success: var(--theme-success);
+  --color-brand-warning: var(--theme-warning);
+  --color-brand-danger: var(--theme-danger);
+  --color-brand-info: var(--theme-info);
+}
+
+:root {
+  --radius: 12px;
+
+  /* DEFAULT LIGHT MODE: Beautiful classic soft colors */
+  --theme-bg: #FFFFFF;
+  --theme-sec-bg: #F3F4F6;
+  --theme-card: #FFFFFF;
+  --theme-card-hover: #E5E7EB;
+  --theme-border: #D1D5DB;
+  --theme-text-primary: #111827;
+  --theme-text-secondary: #4B5563;
+  --theme-text-muted: #6B7280;
+  --theme-primary: #3B82F6;
+  --theme-primary-hover: #2563EB;
+  --theme-success: #10B981;
+  --theme-warning: #F59E0B;
+  --theme-danger: #EF4444;
+  --theme-info: #06B6D4;
+  
+  /* Scrollbar controls */
+  --sb-track: #F1F5F9;
+  --sb-thumb: #CBD5E1;
+  
+  /* Transition settings */
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+/* DARK MODE: All columns, components, inputs, and layout screens are entirely PURE BLACK */
+.theme-dark {
+  --theme-bg: #000000;
+  --theme-sec-bg: #000000;
+  --theme-card: #000000;
+  --theme-card-hover: #111827;
+  --theme-border: #2D3748;
+  --theme-text-primary: #F9FAFB;
+  --theme-text-secondary: #E5E7EB;
+  --theme-text-muted: #9CA3AF;
+  --theme-primary: #3B82F6;
+  --theme-primary-hover: #60A5FA;
+  --theme-success: #34D399;
+  --theme-warning: #FBBF24;
+  --theme-danger: #F87171;
+  --theme-info: #22D3EE;
+  
+  --sb-track: #000000;
+  --sb-thumb: #4A5568;
+}
+
+/* Base resets & styles */
+body {
+  background-color: var(--theme-bg);
+  color: var(--theme-text-primary);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+/* Smooth transitions for key interactive nodes */
+*, ::before, ::after {
+  transition-property: background-color, border-color, text-decoration-color, fill, stroke, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Don't animate active drawing elements */
+canvas, canvas * {
+  transition: none !important;
+}
+
+/* Global Custom Modern Scrollbars mapped smoothly */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sb-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.2);
+}
+
+/* Direct Theme Styling overrides to lock perfect colors in dark mode */
+.theme-dark .bg-white {
+  background-color: #000000 !important;
+}
+
+.theme-dark .bg-\[\#F2F2EB\] {
+  background-color: #000000 !important;
+}
+
+.theme-dark .bg-\[\#E5E5DC\] {
+  background-color: #000000 !important;
+}
+
+.theme-dark .bg-\[\#E5E5DC\]\/70 {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+.theme-dark .bg-\[\#E5E5DC\]\/60 {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.theme-dark .text-\[\#2C2C28\] {
+  color: #F9FAFB !important;
+}
+
+.theme-dark .text-\[\#4A4A40\] {
+  color: #E5E7EB !important;
+}
+
+.theme-dark .text-\[\#8A8A7C\] {
+  color: #9CA3AF !important;
+}
+
+.theme-dark .border-\[\#D6D6CC\] {
+  border-color: #2D3748 !important;
+}
+
+.theme-dark .border-natural-border {
+  border-color: #2D3748 !important;
+}
+
+.theme-dark .bg-natural-bg {
+  background-color: #000000 !important;
+}
+
+.theme-dark .bg-natural-aside {
+  background-color: #000000 !important;
+}
+
+.theme-dark .text-natural-muted {
+  color: #9CA3AF !important;
+}
+
+.theme-dark .text-natural-dark {
+  color: #E5E7EB !important;
+}
+
+.theme-dark .text-natural-text {
+  color: #F9FAFB !important;
+}
+
+/* Ensure bright text areas have high contrast on dark mode with pure white foreground elements as requested */
+.theme-dark textarea, 
+.theme-dark input[type="text"], 
+.theme-dark input[type="search"] {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  border-color: #2D3748 !important;
+}
+
+/* Direct light theme input normalization */
+.theme-default textarea,
+.theme-default input[type="text"],
+.theme-default input[type="search"] {
+  background-color: #FFFFFF !important;
+  color: #111827 !important;
+  border-color: #D1D5DB !important;
+}
+
+/* Specific Chat Bubbles */
+.chat-bubble-user {
+  background-color: #2563EB !important;
+  color: #FFFFFF !important;
+}
+
+.chat-bubble-assistant {
+  background-color: var(--theme-sec-bg) !important;
+  color: var(--theme-text-primary) !important;
+  border-color: var(--theme-border) !important;
+}
+
+.theme-dark .chat-bubble-assistant {
+  background-color: #111827 !important;
+  color: #F9FAFB !important;
+  border-color: #2D3748 !important;
+}

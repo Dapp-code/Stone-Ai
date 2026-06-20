@@ -1,0 +1,6 @@
+{
+  "name": "Stone AI",
+  "description": "Premium structure-led cognitive interface with advanced scratchpad, canvas, thinking mode trace, voice recordings and secure web scrapers.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
